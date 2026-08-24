@@ -56,7 +56,15 @@ async function syncCalendar(appointment, mode) {
 }
 
 export async function processNotifications() {
-  const jobs = await Notification.find({ status: { $in: ['PENDING', 'FAILED'] }, nextAttemptAt: { $lte: new Date() }, attempts: { $lt: 5 } }).limit(20);
+  const jobs = await Notification.find({
+    status: { $in: ['PENDING', 'FAILED'] },
+    nextAttemptAt: { $lte: new Date() },
+    attempts: { $lt: 5 }
+  }).limit(20);
+
+  if (jobs.length) {
+    console.log(`[notifications] processing ${jobs.length} job(s)`);
+  }
   const mailer = transporter();
   for (const job of jobs) {
     try {
@@ -65,9 +73,19 @@ export async function processNotifications() {
       if (job.channel === 'CALENDAR' && appointment) await syncCalendar(appointment, job.type === 'CANCELLED' ? 'DELETE' : 'UPSERT');
       else if (mailer && user) await mailer.sendMail({ from: process.env.MAIL_FROM || 'CareFlow <no-reply@careflow.local>', to: user.email, subject: `CareFlow: ${job.type.replaceAll('_', ' ')}`, text: job.payload.message || 'Your CareFlow appointment has been updated.' });
       else console.log(`[notification:${job.type}]`, user?.email, job.payload.message || 'Email provider not configured');
-      job.status = 'SENT'; job.lastError = undefined;
+      job.status = 'SENT';
+      job.lastError = undefined;
+      console.log(`[notification:${job.type}] SENT`);
     } catch (error) {
-      job.status = 'FAILED'; job.lastError = error.message; job.nextAttemptAt = new Date(Date.now() + 2 ** (job.attempts + 1) * 60000);
+      console.error(
+        `[notification:${job.type}] FAILED attempt=${job.attempts + 1}:`,
+        error.message
+      );
+      job.status = 'FAILED';
+      job.lastError = error.message;
+      job.nextAttemptAt = new Date(
+        Date.now() + 2 ** (job.attempts + 1) * 60000
+      );
     }
     job.attempts += 1; await job.save();
   }
