@@ -176,19 +176,3 @@ node_modules/
 dist/
 
 Real MongoDB credentials, JWT secrets, SMTP credentials, OpenAI API keys, and Google OAuth credentials must remain in environment variables.
-
-Assignment Submission
-
-The final submission consists of:
-
-Complete source code
-README and required technical documentation
-Hosted application URL
-System-design write-up
-
-### Two important corrections from your old README
-
-**Remove this entirely:**
-
-```text
-The living implementation plan is in PROJECT_BLUEPRINT.md
