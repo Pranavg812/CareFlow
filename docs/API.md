@@ -1,29 +1,34 @@
-# API and data schema
+# CareFlow API Documentation
 
-## Endpoints
+## Authentication
 
 | Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/auth/register` | Register a patient or doctor account |
-| POST | `/auth/login` | Authenticate and return JWT/user |
-| GET | `/doctors` | Search doctors by speciality |
-| GET | `/doctors/:id/slots?date=YYYY-MM-DD` | Read computed availability |
-| POST | `/appointments` | Create a safe booking with symptoms |
-| GET | `/appointments/me` | Current user's appointments |
-| PATCH | `/appointments/:id/cancel` | Cancel an appointment |
-| PATCH | `/appointments/:id/clinical-notes` | Doctor notes/prescription and post-visit summary |
-| GET/POST/PATCH | `/admin/doctors` | Admin doctor management |
-| POST | `/admin/doctors/:id/leaves` | Add leave and notify affected patients |
+|---|---|---|
+| POST | `/api/auth/register` | Register a patient or doctor account |
+| POST | `/api/auth/login` | Authenticate and return JWT/user information |
 
-## Collections
+## Patient and Doctor APIs
 
-- **users:** name, email, passwordHash, role, phone.
-- **doctors:** userId, speciality, bio, workingHours, slotDurationMinutes, leaveDates.
-- **appointments:** patientId, doctorId, startAt, endAt, status, symptoms, preVisitSummary, doctorNotes, prescription, postVisitSummary, calendarEventId.
-- **notifications:** userId, appointmentId, type, channel, payload, status, attempts, nextAttemptAt, lastError.
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/doctors` | Search doctors by speciality |
+| GET | `/api/doctors/:id/slots?date=YYYY-MM-DD` | Get computed appointment availability |
+| POST | `/api/appointments` | Create an appointment with symptoms |
+| GET | `/api/appointments/me` | Get the current user's appointments |
+| PATCH | `/api/appointments/:id/cancel` | Cancel an appointment |
+| PATCH | `/api/appointments/:id/clinical-notes` | Doctor updates clinical notes, prescription, and post-visit summary |
 
-## LLM prompts
+## Admin APIs
 
-Pre-visit: `Analyse these symptoms and return JSON only: urgency (Low, Medium, or High), chiefComplaint, and exactly three suggestedQuestions. Do not diagnose. Symptoms: <symptoms>`
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET/POST/PATCH | `/api/admin/doctors` | Manage doctor records |
+| POST | `/api/admin/doctors/:id/leaves` | Add doctor leave and handle affected appointments |
 
-Post-visit: `Convert these clinical notes into JSON with patientSummary, medicationSchedule, and followUpSteps. medicationSchedule must be an array of medicine objects with name, dose, frequency, and times. Use kind, non-diagnostic language. Notes: <notes>`
+> Authentication and role-based authorization are enforced by the API for protected operations.
+
+## Response and Error Handling
+
+The API uses standard HTTP status codes. Successful operations return JSON responses. Invalid requests, unauthorized access, unavailable appointment slots, and server/integration failures return appropriate error responses.
+
+Appointment booking performs server-side availability validation and database-level duplicate protection. A concurrently claimed slot returns HTTP `409 Conflict`.

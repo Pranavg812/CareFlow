@@ -1,69 +1,194 @@
 # CareFlow
 
-Healthcare Appointment & Follow-up Manager built for the assignment brief. It provides secure patient, doctor, and admin portals; safe appointment booking; leave handling; AI-assisted visit summaries; prescriptions/reminders; email; and Google Calendar syncing.
+CareFlow is a healthcare appointment and follow-up management application with separate patient, doctor, and admin portals. It supports appointment booking, doctor availability and leave management, AI-assisted visit summaries, prescriptions, notifications, and Google Calendar synchronization.
 
-## Features and stack
+## Features
 
-- Patient, doctor, and admin role-based portals with JWT authentication.
-- Safe appointment booking with a database-enforced unique slot index, cancellation, doctor leave handling, and notification retries.
-- Pre-visit and post-visit AI summaries, with a clear non-diagnostic fallback when OpenAI is unavailable.
-- Prescription, medication schedule, patient follow-up summary, Gmail SMTP notifications, and Google Calendar sync.
-- React/Vite client, Node.js/Express API, MongoDB Atlas/Mongoose, Nodemailer, Google Calendar API, and OpenAI API.
+- Role-based authentication for patients, doctors, and administrators
+- Doctor search by speciality
+- Availability-based appointment booking
+- Patient symptom collection before confirmation
+- Database-enforced protection against double-booking
+- Appointment cancellation
+- Doctor leave management and conflict handling
+- AI-generated pre-visit and post-visit summaries
+- Graceful AI fallback when the provider is unavailable
+- Clinical notes and prescriptions
+- Medication schedule and patient follow-up information
+- Email notifications with retry handling
+- Google Calendar appointment synchronization
 
-## Project structure
+## Tech Stack
+
+- **Frontend:** React + Vite
+- **Backend:** Node.js + Express
+- **Database:** MongoDB Atlas + Mongoose
+- **Authentication:** JWT + bcrypt
+- **AI:** OpenAI API with deterministic fallback
+- **Email:** Nodemailer + Gmail SMTP
+- **Calendar:** Google Calendar API + OAuth 2.0
+- **Background jobs:** node-cron
+
+## Project Structure
 
 ```text
-client/        React application
-server/        Express API, MongoDB models, integrations, and seed script
-docs/          API, no-Docker setup, and system-design documentation
-```
+client/        React/Vite frontend
+server/        Express API, MongoDB models, services, and seed script
+docs/          API, database, AI, Calendar, and system-design documentation
 
-## Environment configuration
+Requirements
+Node.js 18+
+MongoDB Atlas account or local MongoDB
+Google account for Calendar integration
+Gmail account with an App Password for SMTP
+OpenAI API key (optional)
+Environment Setup
 
-Copy `server/.env.example` to `server/.env`. `MONGODB_URI`, `JWT_SECRET`, and `CLIENT_URL` are required. SMTP, Google Calendar, and OpenAI variables are optional integrations; their setup is documented in [docs/NO_DOCKER_SETUP.md](docs/NO_DOCKER_SETUP.md). Never commit `server/.env`.
+Copy:
 
-## Quick start with Docker
+server/.env.example
 
-1. Copy `server/.env.example` to `server/.env` and add your API keys (optional integrations use safe fallbacks when unconfigured).
-2. Run `docker compose up --build`.
-3. Open `http://localhost:5173`; API health is at `http://localhost:5000/api/health`.
-4. Seed the demo data with `docker compose exec api npm run seed`.
+to:
 
-## Local start
+server/.env
 
-1. Start MongoDB locally or use MongoDB Atlas.
-2. Copy `server/.env.example` to `server/.env` and set `MONGODB_URI`.
-3. Run `npm install`, then `npm run install:all`, then `npm run dev`.
+Configure the required database and authentication variables.
 
-Keep that terminal open: it starts both the Express API on port 5000 and the Vite frontend on port 5173. If you start them separately, start the API first with `npm run dev --prefix server`, then the client with `npm run dev --prefix client`.
+Optional integrations can be configured for Gmail, Google Calendar, and OpenAI.
 
-For the recommended Docker-free route, follow [docs/NO_DOCKER_SETUP.md](docs/NO_DOCKER_SETUP.md).
+Never commit server/.env or any other secret credentials.
 
-## Demo accounts after seeding
+Detailed configuration instructions are available in:
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | admin@careflow.test | Admin123! |
-| Doctor | maya.shah@careflow.test | Doctor123! |
-| Patient | arjun.mehta@careflow.test | Patient123! |
+Google Calendar Setup
+AI Prompts and Behaviour
+Local Setup Without Docker
 
-## Core technical choices
+From the project root:
 
-- Booking uses a MongoDB partial unique index on `doctorId + startAt` and catches duplicate-key errors as HTTP `409`, preventing double booking even under simultaneous requests.
-- External tasks are recorded in `notifications` and handled by a cron worker, so email/calendar failures do not undo confirmed appointments.
-- AI returns structured JSON. If no API key is set or the provider fails, the appointment remains usable and receives a deterministic fallback summary.
-- Admin leave changes find conflicting future appointments, cancel them, and queue notifications.
+npm install
+npm run install:all
+npm run dev
 
-## API
+The application starts:
 
-All API endpoints use the `/api` prefix. A concise endpoint list and schema notes are in [docs/API.md](docs/API.md). Authentication is sent as `Authorization: Bearer <token>`.
+Frontend: http://localhost:5173
+Backend:  http://localhost:5000
+Health:   http://localhost:5000/api/health
 
-## Google Calendar setup
+Keep the development terminal running.
 
-1. Create a Google Cloud project, enable **Google Calendar API**, and configure an OAuth 2.0 Web client.
-2. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` to `server/.env`.
-3. In a production version, each user completes OAuth and we store an encrypted refresh token. This assignment implementation uses an optional shared refresh token (`GOOGLE_REFRESH_TOKEN`) for the clinic demo.
+Seed Demo Data
 
-## Submission notes
+To create the demo users and sample appointment:
 
-Do not commit `.env` or `node_modules`. Create a public GitHub repository, use the `main` branch, deploy the client/API, and submit the public link. The living implementation plan is in [PROJECT_BLUEPRINT.md](PROJECT_BLUEPRINT.md).
+npm run seed --prefix server
+
+The seed script creates demo accounts for local testing.
+
+Demo Accounts
+Role	Email	Password
+Admin	admin@careflow.test	Admin123!
+Doctor	maya.shah@careflow.test	Doctor123!
+Patient	arjun.mehta@careflow.test	Patient123!
+
+These are local demo accounts only.
+
+API Documentation
+
+See docs/API.md.
+
+All API endpoints use the /api prefix.
+
+Protected endpoints use:
+
+Authorization: Bearer <token>
+Database Schema
+
+See docs/DATABASE.md.
+
+The main collections are:
+
+users
+doctors
+appointments
+notifications
+
+Appointment booking uses a partial unique database index on doctor and start time for active bookings to prevent duplicate appointments.
+
+AI Integration
+
+CareFlow uses OpenAI for:
+
+Pre-visit urgency, chief complaint, and suggested questions
+Post-visit patient-friendly summaries
+Medication schedule and follow-up information
+
+See docs/AI_PROMPTS.md.
+
+If OPENAI_API_KEY is unavailable or the provider fails, CareFlow uses deterministic fallback content so the core appointment workflow remains available.
+
+AI output is informational assistance only and is not medical diagnosis or emergency guidance.
+
+Email Notifications
+
+CareFlow uses Nodemailer with SMTP.
+
+Gmail can be configured using a Google App Password rather than the normal Gmail password.
+
+Notification jobs are stored and processed through the background worker. Failed jobs are retried with increasing delays.
+
+Google Calendar
+
+See docs/GOOGLE_CALENDAR.md.
+
+When configured, CareFlow can:
+
+Create Calendar events for booked appointments
+Synchronize configured appointment changes
+Delete Calendar events when appointments are cancelled
+
+Calendar integration failures do not invalidate the underlying appointment.
+
+System Design
+
+The required system-design write-up is available at:
+
+docs/SYSTEM_DESIGN.md
+
+It covers:
+
+Double-booking prevention
+Doctor leave conflict handling
+Slot-hold mechanism
+Notification failure handling
+Hosted Application
+
+Live URL: To be added after deployment.
+
+Security
+
+Do not commit:
+
+.env
+.env.*
+node_modules/
+dist/
+
+Real MongoDB credentials, JWT secrets, SMTP credentials, OpenAI API keys, and Google OAuth credentials must remain in environment variables.
+
+Assignment Submission
+
+The final submission consists of:
+
+Complete source code
+README and required technical documentation
+Hosted application URL
+System-design write-up
+
+### Two important corrections from your old README
+
+**Remove this entirely:**
+
+```text
+The living implementation plan is in PROJECT_BLUEPRINT.md
